@@ -1,0 +1,4 @@
+entrypoints:
+  scar: run_scar.py
+  cellclear: run_cellclear.py
+  cellbender: run_cellbender.py
