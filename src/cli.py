@@ -2,7 +2,10 @@ import argparse
 
 
 def _base_parser(description="Ambient removal module"):
-  parser = argparse.ArgumentParser(description=description)
+  # allow_abbrev=False: otherwise argparse treats the unrecognized `--output`
+  # (api_version >= 0.8.0's named-outputs flag) as an abbreviation of the
+  # declared `--output_dir` and silently overwrites it.
+  parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
   parser.add_argument(
     "--output_dir", type=str, required=True, help="Output directory"
   )
@@ -10,11 +13,11 @@ def _base_parser(description="Ambient removal module"):
     "--name", type=str, required=True, help="Module name/identifier"
   )
   parser.add_argument(
-    "--rawdata.h5",
-    dest="rawdata_h5",
+    "--rawdata_h5ad",
+    dest="rawdata_h5ad",
     type=str,
     required=True,
-    help="Raw 10x H5 count matrix (unfiltered)",
+    help="Raw h5ad count matrix (unfiltered, one pool per dataset)",
   )
   return parser
 
@@ -50,9 +53,5 @@ def build_cellbender_parser():
   parser = _base_parser("CellBender ambient removal + cell calling")
   parser.add_argument(
     "--epochs", type=int, default=150, help="Number of training epochs"
-  )
-  parser.add_argument(
-    "--species_quantile", type=float, default=5,
-    help="Percentile of majority_ratio for ambiguous threshold (default: 5)",
   )
   return parser
