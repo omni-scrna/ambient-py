@@ -42,7 +42,11 @@ def main():
 
   print("  estimating ambient profile from cell-free droplets ..")
   setup_anndata(adata=cells, raw_adata=raw, prob=args.prob, kneeplot=False)
-  ambient_profile = cells.uns["ambient_profile_all"]
+  # genes x 1 table indexed by gene name; scAR uses it by position (.values),
+  # so align it to the cells' gene order explicitly.
+  ambient_profile = cells.uns["ambient_profile_all"].reindex(cells.var_names)
+  if ambient_profile.isna().any().any():
+    raise ValueError("ambient profile is missing genes of the called-cells matrix")
 
   device = "cuda" if torch.cuda.is_available() else "cpu"
   print(f"  training scAR (epochs={args.epochs}, batch_size={args.batch_size}, device={device}) ..")
@@ -55,6 +59,13 @@ def main():
   )
   scar_model.train(epochs=args.epochs, batch_size=args.batch_size, verbose=True)
   scar_model.inference()  # round_to_int="stochastic_rounding" -> int64 counts
+
+  # native_counts rows/columns are in scAR's cell_id / feature_names order
+  # (inference uses DataLoader(shuffle=False)); check before writing by position.
+  if list(scar_model.cell_id) != list(cells.obs_names):
+    raise ValueError("scAR cell order differs from the input cells")
+  if list(scar_model.feature_names) != list(cells.var_names):
+    raise ValueError("scAR gene order differs from the input genes")
 
   write_counts(
     cells,

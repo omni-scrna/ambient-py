@@ -46,6 +46,11 @@ def write_counts(cells, corrected, out_path, extra_obs=None):
   corrected.eliminate_zeros()
 
   out = ad.AnnData(X=corrected, obs=cells.obs.copy(), var=cells.var.copy())
+  # anndata < 0.9 (CellClear env: 0.8.0) casts X to float32 in the constructor;
+  # assigning afterwards keeps int64 in old and new versions.
+  out.X = corrected
+  if out.X.dtype != np.int64:
+    raise TypeError(f"output X has dtype {out.X.dtype}, expected int64")
   if extra_obs:
     for key, values in extra_obs.items():
       out.obs[key] = values
