@@ -17,7 +17,8 @@ python = ">=3.10"
 scar = "*"
 scanpy = "*"
 h5py = "*"
-# CellClear must be pip-installed: pip install cellclear
+# CellClear is pip-only with exact pins (scanpy==1.9.3, anndata==0.8.0, ...):
+# it has its own env, ambient-plan envs/cellclear.yml (hand-written for now).
 
 [feature.cellbender.dependencies]
 cellbender = "*"
