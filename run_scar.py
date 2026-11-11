@@ -34,11 +34,10 @@ def main():
 
   raw, cells = read_inputs(args.rawdata_h5ad, args.called_cells_tsv)
 
-  # setup_anndata reads var["feature_types"]; the raw h5ad (DropletUtils
-  # read10xCounts) has `Type` instead, or nothing.
+  # setup_anndata reads var["feature_types"]; read_inputs has already
+  # dropped every non-"Gene Expression" feature.
   for a in (raw, cells):
-    if "feature_types" not in a.var.columns:
-      a.var["feature_types"] = a.var["Type"].astype(str) if "Type" in a.var.columns else "Gene Expression"
+    a.var["feature_types"] = "Gene Expression"
 
   print("  estimating ambient profile from cell-free droplets ..")
   setup_anndata(adata=cells, raw_adata=raw, prob=args.prob, kneeplot=False)

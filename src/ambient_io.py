@@ -15,11 +15,35 @@ import pandas as pd
 import scipy.sparse as sp
 
 
+# var column naming the feature type: `feature_type` (ambient-data-download
+# >= 8064b49), `Type` (DropletUtils read10xCounts), `feature_types` (scanpy).
+FEATURE_TYPE_COLUMNS = ("feature_type", "Type", "feature_types")
+
+
+def keep_gene_expression(adata):
+  """Drop non-RNA features (e.g. HTO `Antibody Capture`), like ambient-r.
+
+  Without a feature-type column all features are kept.
+  """
+  col = next((c for c in FEATURE_TYPE_COLUMNS if c in adata.var.columns), None)
+  if col is None:
+    print("  no feature-type column in var: keeping all features")
+    return adata
+  is_ge = (adata.var[col].astype(str) == "Gene Expression").values
+  if not is_ge.any():
+    raise ValueError(f"no 'Gene Expression' features in var['{col}']")
+  if is_ge.all():
+    return adata
+  print(f"  keeping {is_ge.sum()} 'Gene Expression' of {adata.n_vars} features")
+  return adata[:, is_ge].copy()
+
+
 def read_inputs(rawdata_h5ad, called_cells_tsv):
   """Return (raw, cells): raw droplets, and a copy subset to called cells."""
   raw = ad.read_h5ad(rawdata_h5ad)
   raw.X = sp.csr_matrix(raw.X)
-  print(f"  raw: {raw.n_obs} barcodes x {raw.n_vars} genes")
+  print(f"  raw: {raw.n_obs} barcodes x {raw.n_vars} features")
+  raw = keep_gene_expression(raw)
 
   cell_ids = pd.read_csv(called_cells_tsv, sep="\t")["cell_id"].astype(str)
   missing = ~cell_ids.isin(raw.obs_names)
