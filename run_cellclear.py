@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CellClear ambient RNA removal module (plan stage id: `cleaning`).
+"""CellClear ambient RNA removal module (plan stage id: `ambient_removal`).
 
 Reads the raw droplets of one pool + the called cell barcodes, runs the
 CellClear `correct_expression` CLI and writes the corrected counts as h5ad.

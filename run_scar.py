@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""scAR ambient RNA removal module (plan stage id: `cleaning`).
+"""scAR ambient RNA removal module (plan stage id: `ambient_removal`).
 
 Reads the raw droplets of one pool + the called cell barcodes, estimates the
 ambient profile from cell-free droplets (scar.setup_anndata), trains scAR and

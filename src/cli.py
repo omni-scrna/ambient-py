@@ -1,7 +1,7 @@
 """CLI for the ambient-py entrypoints.
 
 Mirrors the input contract of the ambient-plan stage for ambient RNA removal
-(stage id `cleaning`; see ambient-r: src/common/schema/{_base,cleaning}.json):
+(stage id `ambient_removal`; see ambient-r: src/common/schema/{_base,ambient_removal}.json):
 
   --output_dir DIR             (base)
   --name NAME                  (base; the module id under api >= 0.5)
@@ -9,7 +9,7 @@ Mirrors the input contract of the ambient-plan stage for ambient RNA removal
   --called_cells_tsv PATH      TSV with a `cell_id` column (called barcodes)
   --output ID=PATH             api >= 0.8: once per declared output (repeatable)
 
-`cell_calling_and_cleaning` (CellBender) takes only the raw matrix.
+`cell_calling_and_ambient_removal` (CellBender) takes only the raw matrix.
 """
 
 import argparse
