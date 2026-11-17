@@ -10,6 +10,7 @@ Same behaviour as ambient-r's decontx/passthrough modules:
 from pathlib import Path
 
 import anndata as ad
+import h5py
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -38,9 +39,86 @@ def keep_gene_expression(adata):
   return adata[:, is_ge].copy()
 
 
+def _attr_str(value):
+  return value.decode() if isinstance(value, bytes) else str(value)
+
+
+def _strings(values):
+  return np.array([_attr_str(v) for v in np.atleast_1d(values)], dtype=object)
+
+
+def _read_column(elem):
+  """One obs/var column or index, for every encoding anndataR/anndata write."""
+  if isinstance(elem, h5py.Dataset):
+    values = elem[()]
+    return _strings(values) if values.dtype.kind in "OSU" else values
+  enc = _attr_str(elem.attrs.get("encoding-type", ""))
+  if enc == "categorical":
+    return pd.Categorical.from_codes(
+      elem["codes"][()],
+      _read_column(elem["categories"]),
+      ordered=bool(elem.attrs.get("ordered", False)),
+    )
+  if enc in ("nullable-integer", "nullable-boolean", "nullable-string-array"):
+    values = _read_column(elem["values"])
+    mask = elem["mask"][()].astype(bool)
+    if enc == "nullable-integer":
+      return pd.arrays.IntegerArray(values, mask)
+    if enc == "nullable-boolean":
+      return pd.arrays.BooleanArray(values.astype(bool), mask)
+    if not mask.any():
+      return values
+    # missing strings: categorical with NaN, which anndata 0.8 can write
+    return pd.Categorical(np.where(mask, None, values))
+  raise ValueError(f"unsupported encoding '{enc}' for {elem.name}")
+
+
+def _read_dataframe(group):
+  index = _read_column(group[_attr_str(group.attrs["_index"])])
+  order = group.attrs.get("column-order", [])
+  columns = [_attr_str(c) for c in np.atleast_1d(order)] if np.size(order) else []
+  return pd.DataFrame(
+    {c: _read_column(group[c]) for c in columns},
+    index=pd.Index(index.astype(str)),
+  )
+
+
+def _read_h5ad_h5py(path):
+  """Read X, obs and var of an h5ad with h5py only (uns/layers are skipped).
+
+  Used when the installed anndata is too old for the file's encodings: CellClear
+  pins anndata 0.8.0, which cannot read `nullable-string-array` columns written
+  by anndataR (ambient-data-download).
+  """
+  with h5py.File(path, "r") as f:
+    x = f["X"]
+    if isinstance(x, h5py.Dataset):
+      X = x[()]
+    else:
+      enc = _attr_str(x.attrs["encoding-type"])
+      cls = {"csr_matrix": sp.csr_matrix, "csc_matrix": sp.csc_matrix}[enc]
+      X = cls((x["data"][()], x["indices"][()], x["indptr"][()]), shape=tuple(x.attrs["shape"]))
+    obs = _read_dataframe(f["obs"])
+    var = _read_dataframe(f["var"])
+  adata = ad.AnnData(obs=obs, var=var)
+  adata.X = X  # after the constructor: anndata 0.8 would cast X to float32
+  return adata
+
+
+def read_h5ad(path):
+  """`ad.read_h5ad`, falling back to h5py if anndata lacks an encoding."""
+  try:
+    return ad.read_h5ad(path)
+  except KeyError as e:
+    if "IOSpec" not in repr(e):
+      raise
+    print(f"  anndata {ad.__version__} cannot read {e.args[0][1]}: reading X/obs/var with h5py")
+    return _read_h5ad_h5py(path)
+
+
 def read_inputs(rawdata_h5ad, called_cells_tsv):
   """Return (raw, cells): raw droplets, and a copy subset to called cells."""
-  raw = ad.read_h5ad(rawdata_h5ad)
+  raw = read_h5ad(rawdata_h5ad)
   raw.X = sp.csr_matrix(raw.X)
   print(f"  raw: {raw.n_obs} barcodes x {raw.n_vars} features")
   raw = keep_gene_expression(raw)
