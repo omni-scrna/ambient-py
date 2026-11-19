@@ -1,7 +1,7 @@
 """CLI for the ambient-py entrypoints.
 
 Mirrors the input contract of the ambient-plan stage for ambient RNA removal
-(stage id `ambient_removal`; see ambient-r: src/common/schema/{_base,ambient_removal}.json):
+(stage id `AMBIENT`; see ambient-r: src/common/schema/{_base,AMBIENT}.json):
 
   --output_dir DIR             (base)
   --name NAME                  (base; the module id under api >= 0.5)
@@ -9,7 +9,7 @@ Mirrors the input contract of the ambient-plan stage for ambient RNA removal
   --called_cells_tsv PATH      TSV with a `cell_id` column (called barcodes)
   --output ID=PATH             api >= 0.8: once per declared output (repeatable)
 
-`cell_calling_and_ambient_removal` (CellBender) takes only the raw matrix.
+CellBender (not in the plan yet) takes only the raw matrix.
 """
 
 import argparse
@@ -37,7 +37,7 @@ def _base_parser(description):
   return parser
 
 
-def build_ambient_removal_parser(description):
+def build_ambient_parser(description):
   parser = _base_parser(description)
   parser.add_argument(
     "--called_cells_tsv",
@@ -49,7 +49,7 @@ def build_ambient_removal_parser(description):
 
 
 def build_scar_parser():
-  parser = build_ambient_removal_parser("scAR ambient removal module")
+  parser = build_ambient_parser("scAR ambient removal module")
   parser.add_argument("--epochs", type=int, default=200, help="Number of training epochs")
   parser.add_argument("--batch_size", type=int, default=64, help="Training batch size")
   parser.add_argument(
@@ -69,7 +69,7 @@ def build_scar_parser():
 
 
 def build_cellclear_parser():
-  parser = build_ambient_removal_parser("CellClear ambient removal module")
+  parser = build_ambient_parser("CellClear ambient removal module")
   parser.add_argument(
     "--resolution", type=float, default=1.2, help="CellClear: Leiden clustering resolution"
   )
