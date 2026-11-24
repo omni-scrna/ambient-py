@@ -68,7 +68,7 @@ def main():
   for k, v in vars(args).items():
     print(f"  {k}: {v}")
 
-  raw, cells = read_inputs(args.rawdata_h5ad, args.called_cells_tsv)
+  raw, cells = read_inputs(args.prepared_h5ad, args.prepared_cells_tsv)
   gene_names = sanitized_gene_names(cells.var)
   gene_ids = [str(g).replace("_", "-") for g in cells.var_names]
 

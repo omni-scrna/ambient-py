@@ -32,7 +32,7 @@ def main():
   np.random.seed(args.seed)
   torch.manual_seed(args.seed)
 
-  raw, cells = read_inputs(args.rawdata_h5ad, args.called_cells_tsv)
+  raw, cells = read_inputs(args.prepared_h5ad, args.prepared_cells_tsv)
 
   # setup_anndata reads var["feature_types"]; read_inputs has already
   # dropped every non-"Gene Expression" feature.

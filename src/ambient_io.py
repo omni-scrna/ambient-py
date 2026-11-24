@@ -1,8 +1,8 @@
 """Shared input/output for the ambient RNA removal entrypoints (scAR, CellClear).
 
 Same behaviour as ambient-r's decontx/passthrough modules:
-- read the raw droplets of one pool (`rawdata_h5ad`, X = counts),
-- subset them to the called barcodes (`called_cells_tsv`, column `cell_id`),
+- read the droplets of one pool as PREP wrote them (`prepared_h5ad`, X = counts),
+- subset them to the called cells (`prepared_cells_tsv`, column `cell_id`),
 - write the corrected matrix as h5ad with X = integer counts (CSR), keeping
   the called cells' obs (e.g. `pool_id`, needed downstream) and var.
 """
@@ -116,18 +116,18 @@ def read_h5ad(path):
     return _read_h5ad_h5py(path)
 
 
-def read_inputs(rawdata_h5ad, called_cells_tsv):
+def read_inputs(prepared_h5ad, prepared_cells_tsv):
   """Return (raw, cells): raw droplets, and a copy subset to called cells."""
-  raw = read_h5ad(rawdata_h5ad)
+  raw = read_h5ad(prepared_h5ad)
   raw.X = sp.csr_matrix(raw.X)
   print(f"  raw: {raw.n_obs} barcodes x {raw.n_vars} features")
   raw = keep_gene_expression(raw)
 
-  cell_ids = pd.read_csv(called_cells_tsv, sep="\t")["cell_id"].astype(str)
+  cell_ids = pd.read_csv(prepared_cells_tsv, sep="\t")["cell_id"].astype(str)
   missing = ~cell_ids.isin(raw.obs_names)
   if missing.any():
     raise ValueError(
-      f"{missing.sum()} called barcode(s) not found in rawdata_h5ad, "
+      f"{missing.sum()} called cell(s) not found in prepared_h5ad, "
       f"e.g. {cell_ids[missing].iloc[0]}"
     )
   cells = raw[cell_ids.values].copy()

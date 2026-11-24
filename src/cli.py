@@ -5,11 +5,13 @@ Mirrors the input contract of the ambient-plan stage for ambient RNA removal
 
   --output_dir DIR             (base)
   --name NAME                  (base; the module id under api >= 0.5)
-  --rawdata_h5ad PATH          raw droplets of one pool, X = counts
-  --called_cells_tsv PATH      TSV with a `cell_id` column (called barcodes)
+  --prepared_h5ad PATH         PREP output: droplets of one pool, X = counts
+                               (raw, or merged over orthologs / GEMs)
+  --prepared_cells_tsv PATH    PREP output: TSV with a `cell_id` column (the
+                               called cells, in the ids of prepared_h5ad)
   --output ID=PATH             api >= 0.8: once per declared output (repeatable)
 
-CellBender (not in the plan yet) takes only the raw matrix.
+CellBender (not in the plan yet) takes only the raw matrix (`--rawdata_h5ad`).
 """
 
 import argparse
@@ -28,22 +30,22 @@ def _base_parser(description):
     metavar="ID=PATH",
     help="api >= 0.8: path of a declared output, once per output",
   )
-  parser.add_argument(
-    "--rawdata_h5ad",
-    type=str,
-    required=True,
-    help="Raw h5ad count matrix (unfiltered, one pool per dataset)",
-  )
   return parser
 
 
 def build_ambient_parser(description):
   parser = _base_parser(description)
   parser.add_argument(
-    "--called_cells_tsv",
+    "--prepared_h5ad",
     type=str,
     required=True,
-    help="TSV with called cell barcodes (column `cell_id`)",
+    help="PREP output: h5ad count matrix of one pool (unfiltered; raw or merged)",
+  )
+  parser.add_argument(
+    "--prepared_cells_tsv",
+    type=str,
+    required=True,
+    help="PREP output: TSV with the called cells (column `cell_id`)",
   )
   return parser
 
@@ -84,6 +86,12 @@ def build_cellclear_parser():
 
 def build_cellbender_parser():
   parser = _base_parser("CellBender ambient removal + cell calling")
+  parser.add_argument(
+    "--rawdata_h5ad",
+    type=str,
+    required=True,
+    help="Raw h5ad count matrix (unfiltered, one pool per dataset)",
+  )
   parser.add_argument("--epochs", type=int, default=150, help="Number of training epochs")
   return parser
 
